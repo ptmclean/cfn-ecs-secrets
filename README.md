@@ -5,4 +5,6 @@ This is intended to clarify the suggestion made in this Issue...
 https://github.com/cfn-modules/fargate-service/issues/7
 
 ## Run
-To run the code the `.deploy.sh` can be run in any bash terminal.
+1. Once cloned locally, configure a bash terminal with a user with power in AWS
+2. Set the AccountID in the `deploy.sh` file
+3. Run `deploy.sh` in the configured bash terminal
