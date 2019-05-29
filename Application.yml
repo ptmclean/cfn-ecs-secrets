@@ -1,0 +1,48 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'fargate-play'
+Resources:
+  Vpc:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      Parameters:
+        S3Endpoint: 'false'
+        DynamoDBEndpoint: 'false'
+        FlowLog: 'false'
+        NatGateways: 'false'
+        ClassB: 1
+      TemplateURL: './node_modules/@cfn-modules/vpc/module.yml'
+  Key:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: './node_modules/@cfn-modules/kms-key/module.yml'
+  Cluster:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: './node_modules/@cfn-modules/ecs-cluster/module.yml'
+  DatabaseHostName:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      Parameters:
+        EnvironmentKey: 'database__host__name'
+        Name: '/namespace/project/database/connection-string'
+        Value: fargate-play.internal.db
+      TemplateURL: './Parameter.yml'
+  DatabasePassword:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      Parameters:
+        EnvironmentKey: 'database__master__password'
+        KmsKeyModule: !GetAtt 'Key.Outputs.StackName'
+      TemplateURL: './SecretModule.yml'
+  Service:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      Parameters:
+        ClusterModule: !GetAtt 'Cluster.Outputs.StackName'
+        VpcModule: !GetAtt 'Vpc.Outputs.StackName'
+        SecretModule1: !GetAtt 'DatabasePassword.Outputs.StackName'
+        ParameterModule1: !GetAtt 'DatabaseHostName.Outputs.StackName'
+        MinCapacity: 1
+        MaxCapacity: 1
+      TemplateURL: './FargateModule.yml'

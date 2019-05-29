@@ -1,0 +1,49 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'An SSM parameter'
+Parameters:
+  Name:
+    Description: 'The name of the parameter'
+    Type: String
+    Default: ''
+  Value:
+    Description: 'The value of the parameter'
+    Type: String
+    Default: ''
+  EnvironmentKey:
+    Description: 'The environment variable key used when module is imported into a fargate-service module'
+    Type: String
+    Default: ''
+Conditions:
+  HasEnvironmentKey: !Not [!Equals [!Ref EnvironmentKey, '']]
+Resources:
+  Parameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: !Ref Name
+      Type: "String"
+      Value: !Ref Value
+Outputs:
+  ModuleId:
+    Value: 'paramter'
+  ModuleVersion:
+    Value: '1.0.0'
+  StackName:
+    Value: !Ref 'AWS::StackName'
+  Arn:
+    Value: !Ref 'Parameter'
+    Export:
+      Name: !Sub '${AWS::StackName}-Arn'
+  Name:
+    Value: !Ref Name
+    Export:
+      Name: !Sub '${AWS::StackName}-Name'
+  Value:
+    Value: !Ref Value
+    Export:
+      Name: !Sub '${AWS::StackName}-Value'
+  EnvironmentKey:
+    Value: !Ref 'EnvironmentKey'
+    Condition: HasEnvironmentKey
+    Export:
+      Name: !Sub '${AWS::StackName}-EnvironmentKey'

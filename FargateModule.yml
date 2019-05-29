@@ -1,0 +1,672 @@
+---
+# Copyright 2018 widdix GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'cfn-modules: Fargate service'
+# cfn-modules:implements()
+Parameters:
+  ClusterModule:
+    Description: 'Stack name of ecs-cluster module.'
+    Type: String
+  VpcModule:
+    Description: 'Stack name of vpc module.'
+    Type: String
+  TargetModule:
+    Description: 'Optional stack name of module implementing Target.'
+    Type: String
+    Default: ''
+  AlertingModule:
+    Description: 'Optional but recommended stack name of alerting module.'
+    Type: String
+    Default: ''
+  ClientSgModule1:
+    Description: 'Optional stack name of client-sg module to mark traffic from EC2 instance.'
+    Type: String
+    Default: ''
+  ClientSgModule2:
+    Description: 'Optional stack name of client-sg module to mark traffic from EC2 instance.'
+    Type: String
+    Default: ''
+  ClientSgModule3:
+    Description: 'Optional stack name of client-sg module to mark traffic from EC2 instance.'
+    Type: String
+    Default: ''
+  ManagedPolicyArns:
+    Description: 'Comma-delimited list of IAM managed policy ARNs to attach to the task''s IAM role'
+    Type: String
+    Default: ''
+  ProxyImage:
+    Description: 'Optional Docker image to use for the proxy container. You can use images in the Docker Hub registry or specify other repositories (repository-url/image:tag).'
+    Type: String
+    Default: ''
+  ProxyPort:
+    Description: 'The port exposed by the proxy container that receives traffic from the load balancer (ProxyPort <> AppPort <> SidecarPort; ignored if ProxyImage is not set).'
+    Type: Number
+    Default: 8000
+    MinValue: 1
+    MaxValue: 49150
+  ProxyEnvironment1Key:
+    Description: 'Optional environment variable 1 key for proxy container.'
+    Type: String
+    Default: ''
+  ProxyEnvironment1Value:
+    Description: 'Optional environment variable 1 value for proxy container.'
+    Type: String
+    Default: ''
+  ProxyEnvironment2Key:
+    Description: 'Optional environment variable 2 key for proxy container.'
+    Type: String
+    Default: ''
+  ProxyEnvironment2Value:
+    Description: 'Optional environment variable 2 value for proxy container.'
+    Type: String
+    Default: ''
+  ProxyEnvironment3Key:
+    Description: 'Optional environment variable 3 key for proxy container.'
+    Type: String
+    Default: ''
+  ProxyEnvironment3Value:
+    Description: 'Optional environment variable 3 value for proxy container.'
+    Type: String
+    Default: ''
+  AppImage:
+    Description: 'The Docker image to use for the app container. You can use images in the Docker Hub registry or specify other repositories (repository-url/image:tag).'
+    Type: String
+    Default: 'widdix/hello:v1'
+  AppPort:
+    Description: 'The port exposed by the app container that receives traffic from the load balancer or the proxy container (AppPort <> ProxyPort <> SidecarPort).'
+    Type: Number
+    Default: 80
+    MinValue: 1
+    MaxValue: 49150
+  ParameterModule1:
+    Description: 'Optional stack name of a parameter module to inject into the image environment variables.'
+    Type: String
+    Default: ''
+  ParameterModule2:
+    Description: 'Optional stack name of a parameter module to inject into the image environment variables.'
+    Type: String
+    Default: ''
+  ParameterModule3:
+    Description: 'Optional stack name of a parameter module to inject into the image environment variables.'
+    Type: String
+    Default: ''
+  ParameterModule4:
+    Description: 'Optional stack name of a parameter module to inject into the image environment variables.'
+    Type: String
+    Default: ''
+  ParameterModule5:
+    Description: 'Optional stack name of a parameter module to inject into the image environment variables.'
+    Type: String
+    Default: ''
+  ParameterModule6:
+    Description: 'Optional stack name of a parameter module to inject into the image environment variables.'
+    Type: String
+    Default: ''
+  ParameterModule7:
+    Description: 'Optional stack name of a parameter module to inject into the image environment variables.'
+    Type: String
+    Default: ''
+  ParameterModule8:
+    Description: 'Optional stack name of a parameter module to inject into the image environment variables.'
+    Type: String
+    Default: ''
+  ParameterModule9:
+    Description: 'Optional stack name of a parameter module to inject into the image environment variables.'
+    Type: String
+    Default: ''
+  ParameterModule10:
+    Description: 'Optional stack name of a parameter module to inject into the image environment variables.'
+    Type: String
+    Default: ''
+  SecretModule1:
+    Description: 'Optional stack name of a secret module to securely inject into the image environment variables.'
+    Type: String
+    Default: ''
+  SecretModule2:
+    Description: 'Optional stack name of a secret module to securely inject into the image environment variables.'
+    Type: String
+    Default: ''
+  SecretModule3:
+    Description: 'Optional stack name of a secret module to securely inject into the image environment variables.'
+    Type: String
+    Default: ''
+  SecretModule4:
+    Description: 'Optional stack name of a secret module to securely inject into the image environment variables.'
+    Type: String
+    Default: ''
+  SecretModule5:
+    Description: 'Optional stack name of a secret module to securely inject into the image environment variables.'
+    Type: String
+    Default: ''
+  SecretModule6:
+    Description: 'Optional stack name of a secret module to securely inject into the image environment variables.'
+    Type: String
+    Default: ''
+  SecretModule7:
+    Description: 'Optional stack name of a secret module to securely inject into the image environment variables.'
+    Type: String
+    Default: ''
+  SecretModule8:
+    Description: 'Optional stack name of a secret module to securely inject into the image environment variables.'
+    Type: String
+    Default: ''
+  SecretModule9:
+    Description: 'Optional stack name of a secret module to securely inject into the image environment variables.'
+    Type: String
+    Default: ''
+  SecretModule10:
+    Description: 'Optional stack name of a secret module to securely inject into the image environment variables.'
+    Type: String
+    Default: ''
+  SidecarImage:
+    Description: 'Optional Docker image to use for the sidecar container. You can use images in the Docker Hub registry or specify other repositories (repository-url/image:tag).'
+    Type: String
+    Default: ''
+  SidecarPort:
+    Description: 'The port exposed by the sidecar container reachable from the app container on host localhost (SidecarPort <> ProxyPort <> AppPort).'
+    Type: Number
+    Default: 9000
+    MinValue: 1
+    MaxValue: 49150
+  SidecarEnvironment1Key:
+    Description: 'Optional environment variable 1 key for sidecar container.'
+    Type: String
+    Default: ''
+  SidecarEnvironment1Value:
+    Description: 'Optional environment variable 1 value for sidecar container.'
+    Type: String
+    Default: ''
+  SidecarEnvironment2Key:
+    Description: 'Optional environment variable 2 key for sidecar container.'
+    Type: String
+    Default: ''
+  SidecarEnvironment2Value:
+    Description: 'Optional environment variable 2 value for sidecar container.'
+    Type: String
+    Default: ''
+  SidecarEnvironment3Key:
+    Description: 'Optional environment variable 3 key for sidecar container.'
+    Type: String
+    Default: ''
+  SidecarEnvironment3Value:
+    Description: 'Optional environment variable 3 value for sidecar container.'
+    Type: String
+    Default: ''
+  Cpu:
+    Description: 'The minimum number of vCPUs to reserve for the container.'
+    Type: String
+    Default: '0.25'
+    AllowedValues: ['0.25', '0.5', '1', '2', '4']
+  Memory:
+    Description: 'The amount (in GB) of memory used by the task.'
+    Type: String
+    Default: '0.5'
+    AllowedValues: ['0.5', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30']
+  DesiredCount:
+    Description: 'The number of simultaneous tasks, that you want to run on the cluster.'
+    Type: Number
+    Default: 2
+    ConstraintDescription: 'Must be >= 1'
+    MinValue: 1
+  MaxCapacity:
+    Description: 'The maximum number of simultaneous tasks, that you want to run on the cluster.'
+    Type: Number
+    Default: 4
+    ConstraintDescription: 'Must be >= 1'
+    MinValue: 1
+  MinCapacity:
+    Description: 'The minimum number of simultaneous tasks, that you want to run on the cluster.'
+    Type: Number
+    Default: 2
+    ConstraintDescription: 'Must be >= 1'
+    MinValue: 1
+  LogsRetentionInDays:
+    Description: 'Specifies the number of days you want to retain log events in the specified log group.'
+    Type: Number
+    Default: 14
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+  SubnetsReach:
+    Description: 'Should the service have direct access to the Internet or do you prefer private subnets with NAT?'
+    Type: String
+    Default: Public
+    AllowedValues:
+    - Public
+    - Private
+  AutoScaling:
+    Description: 'Scale number of tasks based on CPU load?'
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+  HealthCheckGracePeriodSeconds:
+    Description: 'The period of time, in seconds, that the Amazon ECS service scheduler ignores unhealthy Elastic Load Balancing target health checks after a task has first started (ignored if TargetModule is not set).'
+    Type: Number
+    Default: 60
+    MinValue: 0
+    MaxValue: 1800
+Mappings:
+  CpuMap:
+    '0.25':
+      Cpu: 256
+    '0.5':
+      Cpu: 512
+    '1':
+      Cpu: 1024
+    '2':
+      Cpu: 2048
+    '4':
+      Cpu: 4096
+  MemoryMap:
+    '0.5':
+      Memory: 512
+    '1':
+      Memory: 1024
+    '2':
+      Memory: 2048
+    '3':
+      Memory: 3072
+    '4':
+      Memory: 4096
+    '5':
+      Memory: 5120
+    '6':
+      Memory: 6144
+    '7':
+      Memory: 7168
+    '8':
+      Memory: 8192
+    '9':
+      Memory: 9216
+    '10':
+      Memory: 10240
+    '11':
+      Memory: 11264
+    '12':
+      Memory: 12288
+    '13':
+      Memory: 13312
+    '14':
+      Memory: 14336
+    '15':
+      Memory: 15360
+    '16':
+      Memory: 16384
+    '17':
+      Memory: 17408
+    '18':
+      Memory: 18432
+    '19':
+      Memory: 19456
+    '20':
+      Memory: 20480
+    '21':
+      Memory: 21504
+    '22':
+      Memory: 22528
+    '23':
+      Memory: 23552
+    '24':
+      Memory: 24576
+    '25':
+      Memory: 25600
+    '26':
+      Memory: 26624
+    '27':
+      Memory: 27648
+    '28':
+      Memory: 28672
+    '29':
+      Memory: 29696
+    '30':
+      Memory: 30720
+Conditions:
+  HasTargetModule: !Not [!Equals [!Ref TargetModule, '']]
+  HasNotTargetModule: !Not [!Condition HasTargetModule]
+  HasAlertingModule: !Not [!Equals [!Ref AlertingModule, '']]
+  HasClientSgModule1: !Not [!Equals [!Ref ClientSgModule1, '']]
+  HasClientSgModule2: !Not [!Equals [!Ref ClientSgModule2, '']]
+  HasClientSgModule3: !Not [!Equals [!Ref ClientSgModule3, '']]
+  HasSubnetsReachPublic: !Equals [!Ref SubnetsReach, Public]
+  HasAutoScaling: !Equals [!Ref AutoScaling, 'true']
+  HasManagedPolicyArns: !Not [!Equals [!Ref ManagedPolicyArns, '']]
+  HasParameter1: !Not [!Equals [!Ref ParameterModule1, '']]
+  HasParameter2: !Not [!Equals [!Ref ParameterModule2, '']]
+  HasParameter3: !Not [!Equals [!Ref ParameterModule3, '']]
+  HasParameter4: !Not [!Equals [!Ref ParameterModule4, '']]
+  HasParameter5: !Not [!Equals [!Ref ParameterModule5, '']]
+  HasParameter6: !Not [!Equals [!Ref ParameterModule6, '']]
+  HasParameter7: !Not [!Equals [!Ref ParameterModule7, '']]
+  HasParameter8: !Not [!Equals [!Ref ParameterModule8, '']]
+  HasParameter9: !Not [!Equals [!Ref ParameterModule9, '']]
+  HasParameter10: !Not [!Equals [!Ref ParameterModule10, '']]
+  HasSecret1: !Not [!Equals [!Ref SecretModule1, '']]
+  HasSecret2: !Not [!Equals [!Ref SecretModule2, '']]
+  HasSecret3: !Not [!Equals [!Ref SecretModule3, '']]
+  HasSecret4: !Not [!Equals [!Ref SecretModule4, '']]
+  HasSecret5: !Not [!Equals [!Ref SecretModule5, '']]
+  HasSecret6: !Not [!Equals [!Ref SecretModule6, '']]
+  HasSecret7: !Not [!Equals [!Ref SecretModule7, '']]
+  HasSecret8: !Not [!Equals [!Ref SecretModule8, '']]
+  HasSecret9: !Not [!Equals [!Ref SecretModule9, '']]
+  HasSecret10: !Not [!Equals [!Ref SecretModule10, '']]
+  HasProxyImage: !Not [!Equals [!Ref ProxyImage, '']]
+  HasProxyEnvironment1Key: !Not [!Equals [!Ref ProxyEnvironment1Key, '']]
+  HasProxyEnvironment2Key: !Not [!Equals [!Ref ProxyEnvironment2Key, '']]
+  HasProxyEnvironment3Key: !Not [!Equals [!Ref ProxyEnvironment3Key, '']]
+  HasSidecarImage: !Not [!Equals [!Ref SidecarImage, '']]
+  HasSidecarEnvironment1Key: !Not [!Equals [!Ref SidecarEnvironment1Key, '']]
+  HasSidecarEnvironment2Key: !Not [!Equals [!Ref SidecarEnvironment2Key, '']]
+  HasSidecarEnvironment3Key: !Not [!Equals [!Ref SidecarEnvironment3Key, '']]
+Resources:
+  TaskExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: 'ecs-tasks.amazonaws.com'
+          Action: 'sts:AssumeRole'
+      Policies:
+      - PolicyName: AmazonECSTaskExecutionRolePolicy # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - 'ecr:GetAuthorizationToken'
+            - 'ecr:BatchCheckLayerAvailability'
+            - 'ecr:GetDownloadUrlForLayer'
+            - 'ecr:BatchGetImage'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+            - 'logs:CreateLogStream'
+            - 'logs:PutLogEvents'
+            Resource: !GetAtt 'LogGroup.Arn'
+          - Effect: Allow
+            Action:
+              - 'secretsmanager:GetSecretValue'
+              - 'kms:Decrypt'
+            Resource:
+              - !If [HasSecret1, { 'Fn::ImportValue': !Sub '${SecretModule1}-Arn'}, !Ref 'AWS::NoValue']
+              - !If [HasSecret2, { 'Fn::ImportValue': !Sub '${SecretModule2}-Arn'}, !Ref 'AWS::NoValue']
+              - !If [HasSecret3, { 'Fn::ImportValue': !Sub '${SecretModule3}-Arn'}, !Ref 'AWS::NoValue']
+              - !If [HasSecret4, { 'Fn::ImportValue': !Sub '${SecretModule4}-Arn'}, !Ref 'AWS::NoValue']
+              - !If [HasSecret5, { 'Fn::ImportValue': !Sub '${SecretModule5}-Arn'}, !Ref 'AWS::NoValue']
+              - !If [HasSecret6, { 'Fn::ImportValue': !Sub '${SecretModule6}-Arn'}, !Ref 'AWS::NoValue']
+              - !If [HasSecret7, { 'Fn::ImportValue': !Sub '${SecretModule7}-Arn'}, !Ref 'AWS::NoValue']
+              - !If [HasSecret8, { 'Fn::ImportValue': !Sub '${SecretModule8}-Arn'}, !Ref 'AWS::NoValue']
+              - !If [HasSecret9, { 'Fn::ImportValue': !Sub '${SecretModule9}-Arn'}, !Ref 'AWS::NoValue']
+              - !If [HasSecret10, { 'Fn::ImportValue': !Sub '${SecretModule10}-Arn'}, !Ref 'AWS::NoValue']
+  TaskRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: 'ecs-tasks.amazonaws.com'
+          Action: 'sts:AssumeRole'
+      ManagedPolicyArns: !If [HasManagedPolicyArns, !Split [',', !Ref ManagedPolicyArns], !Ref 'AWS::NoValue']
+  TaskDefinition:
+    Type: 'AWS::ECS::TaskDefinition'
+    Properties:
+      ContainerDefinitions:
+      - !If
+        - HasProxyImage
+        - Name: proxy
+          Image: !Ref ProxyImage
+          PortMappings:
+          - !If [HasTargetModule, {ContainerPort: !Ref ProxyPort, Protocol: tcp}, !Ref 'AWS::NoValue']
+          Essential: true
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              'awslogs-region': !Ref 'AWS::Region'
+              'awslogs-group': !Ref LogGroup
+              'awslogs-stream-prefix': proxy
+          Environment:
+          - !If [HasProxyEnvironment1Key, {Name: !Ref ProxyEnvironment1Key, Value: !Ref ProxyEnvironment1Value}, !Ref 'AWS::NoValue']
+          - !If [HasProxyEnvironment2Key, {Name: !Ref ProxyEnvironment2Key, Value: !Ref ProxyEnvironment2Value}, !Ref 'AWS::NoValue']
+          - !If [HasProxyEnvironment3Key, {Name: !Ref ProxyEnvironment3Key, Value: !Ref ProxyEnvironment3Value}, !Ref 'AWS::NoValue']
+        - !Ref 'AWS::NoValue'
+      - Name: app
+        Image: !Ref AppImage
+        PortMappings:
+        - !If [HasProxyImage, {ContainerPort: !Ref AppPort, Protocol: tcp}, !If [HasTargetModule, {ContainerPort: !Ref AppPort, Protocol: tcp}, !Ref 'AWS::NoValue']]
+        Essential: true
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            'awslogs-region': !Ref 'AWS::Region'
+            'awslogs-group': !Ref LogGroup
+            'awslogs-stream-prefix': app
+        Secrets:
+          - !If [HasSecret1, { Name: {'Fn::ImportValue': !Sub '${SecretModule1}-EnvironmentKey'}, ValueFrom: {'Fn::ImportValue': !Sub '${SecretModule1}-Arn'} }, !Ref 'AWS::NoValue']
+          - !If [HasSecret2, { Name: {'Fn::ImportValue': !Sub '${SecretModule2}-EnvironmentKey'}, ValueFrom: {'Fn::ImportValue': !Sub '${SecretModule2}-Arn'} }, !Ref 'AWS::NoValue']
+          - !If [HasSecret3, { Name: {'Fn::ImportValue': !Sub '${SecretModule3}-EnvironmentKey'}, ValueFrom: {'Fn::ImportValue': !Sub '${SecretModule3}-Arn'} }, !Ref 'AWS::NoValue']
+          - !If [HasSecret4, { Name: {'Fn::ImportValue': !Sub '${SecretModule4}-EnvironmentKey'}, ValueFrom: {'Fn::ImportValue': !Sub '${SecretModule4}-Arn'} }, !Ref 'AWS::NoValue']
+          - !If [HasSecret5, { Name: {'Fn::ImportValue': !Sub '${SecretModule5}-EnvironmentKey'}, ValueFrom: {'Fn::ImportValue': !Sub '${SecretModule5}-Arn'} }, !Ref 'AWS::NoValue']
+          - !If [HasSecret6, { Name: {'Fn::ImportValue': !Sub '${SecretModule6}-EnvironmentKey'}, ValueFrom: {'Fn::ImportValue': !Sub '${SecretModule6}-Arn'} }, !Ref 'AWS::NoValue']
+          - !If [HasSecret7, { Name: {'Fn::ImportValue': !Sub '${SecretModule7}-EnvironmentKey'}, ValueFrom: {'Fn::ImportValue': !Sub '${SecretModule7}-Arn'} }, !Ref 'AWS::NoValue']
+          - !If [HasSecret8, { Name: {'Fn::ImportValue': !Sub '${SecretModule8}-EnvironmentKey'}, ValueFrom: {'Fn::ImportValue': !Sub '${SecretModule8}-Arn'} }, !Ref 'AWS::NoValue']
+          - !If [HasSecret9, { Name: {'Fn::ImportValue': !Sub '${SecretModule9}-EnvironmentKey'}, ValueFrom: {'Fn::ImportValue': !Sub '${SecretModule9}-Arn'} }, !Ref 'AWS::NoValue']
+          - !If [HasSecret10, { Name: {'Fn::ImportValue': !Sub '${SecretModule10}-EnvironmentKey'}, ValueFrom: {'Fn::ImportValue': !Sub '${SecretModule10}-Arn'} }, !Ref 'AWS::NoValue']
+        Environment:
+          - !If [HasParameter1, { Name: {'Fn::ImportValue': !Sub '${ParameterModule1}-EnvironmentKey'}, Value: {'Fn::ImportValue': !Sub '${ParameterModule1}-Value'} }, !Ref 'AWS::NoValue']
+          - !If [HasParameter2, { Name: {'Fn::ImportValue': !Sub '${ParameterModule2}-EnvironmentKey'}, Value: {'Fn::ImportValue': !Sub '${ParameterModule2}-Value'} }, !Ref 'AWS::NoValue']
+          - !If [HasParameter3, { Name: {'Fn::ImportValue': !Sub '${ParameterModule3}-EnvironmentKey'}, Value: {'Fn::ImportValue': !Sub '${ParameterModule3}-Value'} }, !Ref 'AWS::NoValue']
+          - !If [HasParameter4, { Name: {'Fn::ImportValue': !Sub '${ParameterModule4}-EnvironmentKey'}, Value: {'Fn::ImportValue': !Sub '${ParameterModule4}-Value'} }, !Ref 'AWS::NoValue']
+          - !If [HasParameter5, { Name: {'Fn::ImportValue': !Sub '${ParameterModule5}-EnvironmentKey'}, Value: {'Fn::ImportValue': !Sub '${ParameterModule5}-Value'} }, !Ref 'AWS::NoValue']
+          - !If [HasParameter6, { Name: {'Fn::ImportValue': !Sub '${ParameterModule6}-EnvironmentKey'}, Value: {'Fn::ImportValue': !Sub '${ParameterModule6}-Value'} }, !Ref 'AWS::NoValue']
+          - !If [HasParameter7, { Name: {'Fn::ImportValue': !Sub '${ParameterModule7}-EnvironmentKey'}, Value: {'Fn::ImportValue': !Sub '${ParameterModule7}-Value'} }, !Ref 'AWS::NoValue']
+          - !If [HasParameter8, { Name: {'Fn::ImportValue': !Sub '${ParameterModule8}-EnvironmentKey'}, Value: {'Fn::ImportValue': !Sub '${ParameterModule8}-Value'} }, !Ref 'AWS::NoValue']
+          - !If [HasParameter9, { Name: {'Fn::ImportValue': !Sub '${ParameterModule9}-EnvironmentKey'}, Value: {'Fn::ImportValue': !Sub '${ParameterModule9}-Value'} }, !Ref 'AWS::NoValue']
+          - !If [HasParameter10, { Name: {'Fn::ImportValue': !Sub '${ParameterModule10}-EnvironmentKey'}, Value: {'Fn::ImportValue': !Sub '${ParameterModule10}-Value'} }, !Ref 'AWS::NoValue']
+      - !If
+        - HasSidecarImage
+        - Name: sidecar
+          Image: !Ref SidecarImage
+          PortMappings:
+          - ContainerPort: !Ref SidecarPort
+            Protocol: tcp
+          Essential: false
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              'awslogs-region': !Ref 'AWS::Region'
+              'awslogs-group': !Ref LogGroup
+              'awslogs-stream-prefix': sidecar
+          Environment:
+          - !If [HasSidecarEnvironment1Key, {Name: !Ref SidecarEnvironment1Key, Value: !Ref SidecarEnvironment1Value}, !Ref 'AWS::NoValue']
+          - !If [HasSidecarEnvironment2Key, {Name: !Ref SidecarEnvironment2Key, Value: !Ref SidecarEnvironment2Value}, !Ref 'AWS::NoValue']
+          - !If [HasSidecarEnvironment3Key, {Name: !Ref SidecarEnvironment3Key, Value: !Ref SidecarEnvironment3Value}, !Ref 'AWS::NoValue']
+        - !Ref 'AWS::NoValue'
+      Cpu: !FindInMap [CpuMap, !Ref Cpu, Cpu]
+      ExecutionRoleArn: !GetAtt 'TaskExecutionRole.Arn'
+      Family: !Ref 'AWS::StackName'
+      Memory: !FindInMap [MemoryMap, !Ref Memory, Memory]
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      TaskRoleArn: !GetAtt 'TaskRole.Arn'
+  LogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      RetentionInDays: !Ref LogsRetentionInDays
+  SecurityGroup:
+    Condition: HasNotTargetModule
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: !Ref 'AWS::StackName'
+      VpcId: {'Fn::ImportValue': !Sub '${VpcModule}-Id'}
+  Service:
+    Type: 'AWS::ECS::Service'
+    Properties:
+      Cluster: {'Fn::ImportValue': !Sub '${ClusterModule}-Name'}
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 50
+      DesiredCount: !Ref DesiredCount
+      HealthCheckGracePeriodSeconds: !If [HasTargetModule, !Ref HealthCheckGracePeriodSeconds, !Ref 'AWS::NoValue']
+      LaunchType: FARGATE
+      LoadBalancers:
+      - !If [HasTargetModule, {ContainerName: !If [HasProxyImage, proxy, app], ContainerPort: !If [HasProxyImage, !Ref ProxyPort, !Ref AppPort], TargetGroupArn: {'Fn::ImportValue': !Sub '${TargetModule}-Arn'}}, !Ref 'AWS::NoValue']
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: !If [HasSubnetsReachPublic, ENABLED, DISABLED]
+          SecurityGroups:
+          - !If [HasTargetModule, {'Fn::ImportValue': !Sub '${TargetModule}-SecurityGroupId'}, !Ref SecurityGroup]
+          - !If [HasClientSgModule1, {'Fn::ImportValue': !Sub '${ClientSgModule1}-SecurityGroupId'}, !Ref 'AWS::NoValue']
+          - !If [HasClientSgModule2, {'Fn::ImportValue': !Sub '${ClientSgModule2}-SecurityGroupId'}, !Ref 'AWS::NoValue']
+          - !If [HasClientSgModule3, {'Fn::ImportValue': !Sub '${ClientSgModule3}-SecurityGroupId'}, !Ref 'AWS::NoValue']
+          Subnets: !Split [',', {'Fn::ImportValue': !Sub '${VpcModule}-SubnetIds${SubnetsReach}'}]
+      TaskDefinition: !Ref TaskDefinition
+  ScalableTargetRole: # based on http://docs.aws.amazon.com/AmazonECS/latest/developerguide/autoscale_IAM_role.html
+    Condition: HasAutoScaling
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: 'application-autoscaling.amazonaws.com'
+          Action: 'sts:AssumeRole'
+      Policies:
+      - PolicyName: AmazonEC2ContainerServiceAutoscaleRole
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - 'ecs:DescribeServices'
+            - 'ecs:UpdateService'
+            Resource: '*'
+      - PolicyName: cloudwatch
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - 'cloudwatch:DescribeAlarms'
+            Resource: '*'
+  ScalableTarget:
+    Condition: HasAutoScaling
+    Type: 'AWS::ApplicationAutoScaling::ScalableTarget'
+    Properties:
+      MaxCapacity: !Ref MaxCapacity
+      MinCapacity: !Ref MinCapacity
+      ResourceId: !Sub
+      - 'service/${Cluster}/${Service}'
+      - Cluster: {'Fn::ImportValue': !Sub '${ClusterModule}-Name'}
+        Service: !GetAtt 'Service.Name'
+      RoleARN: !GetAtt 'ScalableTargetRole.Arn'
+      ScalableDimension: 'ecs:service:DesiredCount'
+      ServiceNamespace: ecs
+  ScaleUpPolicy:
+    Condition: HasAutoScaling
+    Type: 'AWS::ApplicationAutoScaling::ScalingPolicy'
+    Properties:
+      PolicyName: !Sub '${AWS::StackName}-scale-up'
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref ScalableTarget
+      StepScalingPolicyConfiguration:
+        AdjustmentType: PercentChangeInCapacity
+        Cooldown: 300
+        MinAdjustmentMagnitude: 1
+        StepAdjustments:
+        - MetricIntervalLowerBound: 0
+          ScalingAdjustment: 25
+  ScaleDownPolicy:
+    Condition: HasAutoScaling
+    Type: 'AWS::ApplicationAutoScaling::ScalingPolicy'
+    Properties:
+      PolicyName: !Sub '${AWS::StackName}-scale-down'
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref ScalableTarget
+      StepScalingPolicyConfiguration:
+        AdjustmentType: PercentChangeInCapacity
+        Cooldown: 300
+        MinAdjustmentMagnitude: 1
+        StepAdjustments:
+        - MetricIntervalUpperBound: 0
+          ScalingAdjustment: -25
+  CPUUtilizationTooHighAlarm:
+    Condition: HasAlertingModule
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      AlarmDescription: 'Average CPU utilization over last 10 minutes higher than 80%'
+      Namespace: 'AWS/ECS'
+      Dimensions:
+      - Name: ClusterName
+        Value: {'Fn::ImportValue': !Sub '${ClusterModule}-Name'}
+      - Name: ServiceName
+        Value: !GetAtt 'Service.Name'
+      MetricName: CPUUtilization
+      ComparisonOperator: GreaterThanThreshold
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 80
+      AlarmActions:
+      - {'Fn::ImportValue': !Sub '${AlertingModule}-Arn'}
+  CPUUtilizationHighAlarm:
+    Condition: HasAutoScaling
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      AlarmDescription: 'Service is running out of CPU'
+      Namespace: 'AWS/ECS'
+      Dimensions:
+      - Name: ClusterName
+        Value: {'Fn::ImportValue': !Sub '${ClusterModule}-Name'}
+      - Name: ServiceName
+        Value: !GetAtt 'Service.Name'
+      MetricName: CPUUtilization
+      ComparisonOperator: GreaterThanThreshold
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 60
+      AlarmActions:
+      - !Ref ScaleUpPolicy
+  CPUUtilizationLowAlarm:
+    Condition: HasAutoScaling
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      AlarmDescription: 'Service is wasting CPU'
+      Namespace: 'AWS/ECS'
+      Dimensions:
+      - Name: ClusterName
+        Value: {'Fn::ImportValue': !Sub '${ClusterModule}-Name'}
+      - Name: ServiceName
+        Value: !GetAtt 'Service.Name'
+      MetricName: CPUUtilization
+      ComparisonOperator: LessThanThreshold
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: 30
+      AlarmActions:
+      - !Ref ScaleDownPolicy
+Outputs:
+  ModuleId:
+    Value: 'fargate-service'
+  ModuleVersion:
+    Value: '2.0.0'
+  StackName:
+    Value: !Ref 'AWS::StackName'
+  TaskRoleArn:
+    Value: !GetAtt 'TaskRole.Arn'
+    Export:
+      Name: !Sub '${AWS::StackName}-TaskRoleArn'

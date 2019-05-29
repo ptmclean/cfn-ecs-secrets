@@ -1,0 +1,5 @@
+/packaged
+/node_modules
+
+**/bin
+**/obj
